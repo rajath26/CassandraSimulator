@@ -1,4 +1,4 @@
-CFLAGS = -Wall -g -std=c++11 
+CFLAGS = -Wall -g -pthread -std=c++11 
 
 all: CassandraNode Client
 
