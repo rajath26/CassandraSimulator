@@ -9,6 +9,14 @@ from matplotlib.dates import MinuteLocator, SecondLocator, DateFormatter
 # Usage : python plotResults <fbf_csv> <nonFbf_csv> <expected_counter>
 ##
 
+def usage():
+    print "Usage : python plotResults <fbf_csv> <nonFbf_csv> <expected_counter>"
+
+if len(sys.argv) != 4:
+    print "Invalid usage"
+    usage()
+    sys.exit()
+
 time1 = []
 fbfCounter = []
 time2 = []
@@ -103,8 +111,8 @@ with open(expFile, 'rU') as f3:
     time31 = [datetime.datetime.strptime(s, '%H:%M:%S') for s in time3]
     retryTime31 = [datetime.datetime.strptime(s, '%H:%M:%S') for s in retryMarker3Time]
 
-fig = plt.figure(figsize=(8,6))
-plt.title("Idempotent Updates using a FBF")
+fig = plt.figure(figsize=(6,5))
+#plt.title("Idempotent Updates using a FBF")
 ax = fig.add_subplot(111)
 
 #ln1 = ax.plot(time1, shard1_traffic, '-', label="shard1 traffic", lw=1)
@@ -134,17 +142,17 @@ for i in range(0,len(retryIndex3)):
     except IndexError:
         continue
 for i in range(0,len(retryMarker2New)):
-    ln4 = ax.plot([retryTime21New[i]], [retryMarker2New[i]], 'rD', label="Retry")
+    ln4 = ax.plot([retryTime21New[i]], [retryMarker2New[i]], 'r*', label="Retry")
 for i in range(0,len(retryMarker1New)):
-    ln5 = ax.plot([retryTime11New[i]], [retryMarker1New[i]], 'rD', label="Retry")
+    ln5 = ax.plot([retryTime11New[i]], [retryMarker1New[i]], 'r*', label="Retry")
 for i in range(0,len(retryMarker3New)):
-    ln6 = ax.plot([retryTime31New[i]], [retryMarker3New[i]], 'rD', label="Retry")
+    ln6 = ax.plot([retryTime31New[i]], [retryMarker3New[i]], 'r*', label="Retry")
 
 
-ln1 = ax.step(time11, fbfCounter, label="Counter with FBF enabled", lw=1)
+ln1 = ax.step(time11, fbfCounter, linestyle='-', label="Counter with FBF enabled", lw=1)
 #ln1.set_marker('--')
-ln3 = ax.step(time31, expCounter, label="Expected Counter value", lw=1)
-ln2 = ax.step(time21, noFbfCounter, label="Counter with FBF disabled", lw=1)
+ln3 = ax.step(time31, expCounter, linestyle='--', label="Expected Counter value", lw=1)
+ln2 = ax.step(time21, noFbfCounter, linestyle=':', label="Counter with FBF disabled", lw=1)
 #ln2.set_marker(':')
 #ln3.set_marker('-.')
 
@@ -156,7 +164,7 @@ ax.xaxis.set_major_formatter(DateFormatter("%H:%M:%S"))
 ax = plt.gca()
 
 #lns = ln1 + ln2 + ln3 + ln4 + ln5 + ln6
-lns = ln1 + ln2 + ln3 #+ ln4
+lns = ln1 + ln2 + ln3 + ln4
 labs = [l.get_label() for l in lns]
 ax.legend(lns, labs, loc='upper left', prop={'size':10})
 
