@@ -53,6 +53,7 @@
 #define READMAPPING 3
 #define FBFENABLE "fbf"
 #define FBFDISABLE "nofbf"
+#define RBFENABLE "rbf"
 #define ERRORMESSAGE "error"
 #define DELIMITER "::"
 #define ENTRY_END ";;"
@@ -65,5 +66,6 @@
 #define LOCALSTRING "l"
 
 enum messageType {JOIN, MEMBERLIST, CREATE, CREATE_REPLICA, CREATE_SUCCESS, ERROR, INCREMENT, INCREMENT_SUCCESS, INCREMENT_REPLICA, READ, READ_SUCCESS, UNKNOWN};
+enum BFtype {fbfType, rbfType, noneType};
 
 #endif /* COMMON_H_ */

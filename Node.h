@@ -14,6 +14,7 @@
 #include "NodeId.h"
 #include "Counter.h"
 #include "FBF.h"
+#include "RecycleBloomFilter.h"
 
 class Node {
 private:
@@ -32,6 +33,7 @@ private:
 	std::mutex memTableMutex;
 	std::map<std::string, Counter> memTable;
 	std::map<std::string, FBF*> fbfMap;
+	std::map<std::string, RecycleBloomFilter *> rBFMap;
 
 public:
 	Node(std::string ipAddress_, int portNumber, bool isLeader);
@@ -62,7 +64,7 @@ public:
 	bool sendRing();
 	void deserializeRingInMsgAndBuildRing(std::string ringInMsg);
 	std::vector<std::tuple<std::string, int, size_t>> findLeader(std::string counterName_);
-	bool createCounter(std::string counterName_, std::vector<std::tuple<std::string, int, size_t>>, bool fbfEnable);
+	bool createCounter(std::string counterName_, std::vector<std::tuple<std::string, int, size_t>>, BFtype type);
 	bool incrementCounterLocal(std::string counterName_, std::vector<std::tuple<std::string, int, size_t>>, int increment_, int transId);
 	bool incrementCounterRemote(std::string counterName_, std::vector<std::tuple<std::string, int, size_t>>, size_t nodeId, long logical_ts, long value, int transId);
 	std::pair<bool, long> readCounter(std::string counterName_);

@@ -14,13 +14,13 @@
 class Counter {
 private:
 	std::vector<Shard> shards;
-	bool enableFBF;
+	BFtype bloomFilterType;
 public:
 	Counter();
-	Counter(bool enableFBF);
+	Counter(BFtype type);
 	virtual ~Counter();
-	void setFBFenable(bool flag);
-	bool getFBFenable();
+	void setBFtype(BFtype flag);
+	BFtype getBFtype();
 	bool addLocalShard(size_t nodeId, int increment);
 	bool addRemoteShard(size_t nodeId, long logical_ts, long value);
 	long returnSumOfLogicalTsOfAllLocalShards();

@@ -2,8 +2,8 @@ CFLAGS = -Wall -g -pthread -std=c++11
 
 all: CassandraNode Client
 
-CassandraNode: Node.o Message.o tcp.o NodeId.o Counter.o Shard.o FBF.o
-	g++ -o CassandraNode Node.o Message.o tcp.o NodeId.o Counter.o FBF.o Shard.o ${CFLAGS}
+CassandraNode: Node.o Message.o tcp.o NodeId.o Counter.o Shard.o FBF.o RecycleBloomFilter.o
+	g++ -o CassandraNode Node.o Message.o tcp.o NodeId.o Counter.o FBF.o Shard.o RecycleBloomFilter.o ${CFLAGS}
 	#g++ -o CassandraNode Node.o Message.o tcp.o NodeId.o Counter.o Shard.o ${CFLAGS}
 	
 Client: Client.o tcp.o Message.o
@@ -26,6 +26,9 @@ Counter.o: Counter.cpp Counter.h Common.h Shard.h FBF.h
 	
 FBF.o: FBF.cpp FBF.h Common.h bloom_filter.hpp
 	g++ -c FBF.cpp ${CFLAGS}
+	
+RecycleBloomFilter.o: RecycleBloomFilter.cpp RecycleBloomFilter.h bloom_filter.hpp Common.h
+	g++ -c RecycleBloomFilter.cpp ${CFLAGS}
  
 Shard.o: Shard.cpp Shard.h Common.h
 	g++ -c Shard.cpp ${CFLAGS}

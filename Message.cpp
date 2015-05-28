@@ -54,12 +54,12 @@ std::string Message::getCounterName() {
 	return this->counterName;
 }
 
-void Message::setFbfEnable(bool flag) {
-	this->fbfEnable = flag;
+void Message::setFbfEnableType(BFtype flag) {
+	this->fbfEnableType = flag;
 }
 
-bool Message::getFbfEnable() {
-	return this->fbfEnable;
+BFtype Message::getFbfEnableType() {
+	return this->fbfEnableType;
 }
 
 void Message::setIncrement(int increment_) {
@@ -154,10 +154,13 @@ void Message::extractOpCode(std::string recMsg) {
 		this->setCounterName(counterName_);
 		std::string fbfStatus = recMsg.substr(pos+2);
 		if ( fbfStatus == FBFENABLE ) {
-			this->setFbfEnable(true);
+			this->setFbfEnableType(fbfType);
+		}
+		else if ( fbfStatus == RBFENABLE ) {
+			this->setFbfEnableType(rbfType);
 		}
 		else {
-			this->setFbfEnable(false);
+			this->setFbfEnableType(noneType);
 		}
 		return;
 	}
@@ -175,10 +178,13 @@ void Message::extractOpCode(std::string recMsg) {
 		std::string fbfStatus = recMsg.substr(pos+2);
 		*/
 		if ( fbfStatus == FBFENABLE ) {
-			this->setFbfEnable(true);
+			this->setFbfEnableType(fbfType);
+		}
+		else if ( fbfStatus == RBFENABLE ) {
+			this->setFbfEnableType(rbfType);
 		}
 		else {
-			this->setFbfEnable(false);
+			this->setFbfEnableType(noneType);
 		}
 		return;
 	}
@@ -276,11 +282,14 @@ std::string Message::createBroadcastMessage(std::string ringInMsg) {
 	return message;
 }
 
-std::string Message::createReplicaMessage(std::string counterName_, bool fbfEnable) {
+std::string Message::createReplicaMessage(std::string counterName_, BFtype type) {
 	std::string message(CREATEREPLICAMESSAGE);
 	std::string fbfStatus;
-	if (fbfEnable) {
+	if (type == fbfType) {
 		fbfStatus = FBFENABLE;
+	}
+	else if (type == rbfType) {
+		fbfStatus = RBFENABLE;
 	}
 	else {
 		fbfStatus = FBFDISABLE;
@@ -289,11 +298,14 @@ std::string Message::createReplicaMessage(std::string counterName_, bool fbfEnab
 	return message;
 }
 
-std::string Message::createMessage(std::string counterName_, bool fbfEnable) {
+std::string Message::createMessage(std::string counterName_, BFtype type) {
 	std::string message(CREATEMESSAGE);
 	std::string fbfStatus;
-	if (fbfEnable) {
+	if (type == fbfType) {
 		fbfStatus = FBFENABLE;
+	}
+	else if (type == rbfType) {
+		fbfStatus = RBFENABLE;
 	}
 	else {
 		fbfStatus = FBFDISABLE;

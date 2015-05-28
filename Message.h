@@ -17,7 +17,7 @@ private:
 	int portNumber;
 	std::string ringInMsg;
 	std::string counterName;
-	bool fbfEnable;
+	BFtype fbfEnableType;
 	int increment;
 	size_t nodeId;
 	long logicalTimestamp;
@@ -37,8 +37,8 @@ public:
 	std::string getRingInMsg();
 	void setCounterName(std::string counterName_);
 	std::string getCounterName();
-	void setFbfEnable(bool flag);
-	bool getFbfEnable();
+	void setFbfEnableType(BFtype flag);
+	BFtype getFbfEnableType();
 	void setIncrement(int increment_);
 	int getIncrement();
 	void setNodeId(size_t nodeId_);
@@ -54,8 +54,8 @@ public:
 	static std::string createJoinMessage(std::string ipAddress, int portNumber);
 	void extractOpCode(std::string recMsg);
 	static std::string createBroadcastMessage(std::string ringInMsg);
-	static std::string createReplicaMessage(std::string counterName_, bool fbfEnable);
-	static std::string createMessage(std::string counterName_, bool fbfEnable);
+	static std::string createReplicaMessage(std::string counterName_, BFtype type);
+	static std::string createMessage(std::string counterName_, BFtype type);
 	static std::string createSuccessMessage(std::string counterName_);
 	static std::string errorMessage(std::string counterName_);
 	static std::string incrementMessage(std::string counterName_, int increment_, int transId_);

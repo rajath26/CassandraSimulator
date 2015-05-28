@@ -9,20 +9,26 @@
 
 Counter::Counter() {
 	shards.clear();
-	this->setFBFenable(false);
-	if ( this->getFBFenable() ) {
+	this->setBFtype(noneType);
+	if ( this->getBFtype() == fbfType ) {
 		std::cout<<std::endl<<"FBF is enabled for this Counter object"<<std::endl;
+	}
+	else if ( this->getBFtype() == rbfType ) {
+		std::cout<<std::endl<<"RBF is enabled for this Counter object"<<std::endl;
 	}
 	else {
 		std::cout<<std::endl<<"FBF disabled for this Counter object"<<std::endl;
 	}
 }
 
-Counter::Counter(bool enableFBF) {
+Counter::Counter(BFtype type) {
 	shards.clear();
-	this->setFBFenable(enableFBF);
-	if ( this->getFBFenable() ) {
+	this->setBFtype(type);
+	if ( this->getBFtype() == fbfType ) {
 		std::cout<<std::endl<<"FBF is enabled for this Counter object"<<std::endl;
+	}
+	else if ( this->getBFtype() == rbfType ) {
+		std::cout<<std::endl<<"RBF is enabled for this Counter object"<<std::endl;
 	}
 	else {
 		std::cout<<std::endl<<"FBF disabled for this Counter object"<<std::endl;
@@ -31,12 +37,12 @@ Counter::Counter(bool enableFBF) {
 
 Counter::~Counter() {}
 
-void Counter::setFBFenable(bool flag) {
-	this->enableFBF = flag;
+void Counter::setBFtype(BFtype flag) {
+	this->bloomFilterType = flag;
 }
 
-bool Counter::getFBFenable() {
-	return this->enableFBF;
+BFtype Counter::getBFtype() {
+	return this->bloomFilterType;
 }
 
 bool Counter::addLocalShard(size_t nodeId, int increment) {

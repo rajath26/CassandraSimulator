@@ -7,12 +7,12 @@
 
 #include "Client.h"
 
-Client::Client(std::string ipAddress_, int portNumber_, std::string operation_, std::string counterName_, std::string fbfEnable_, int increment_, int transId_) {
+Client::Client(std::string ipAddress_, int portNumber_, std::string operation_, std::string counterName_, std::string type_, int increment_, int transId_) {
 	this->setCoordinatorIpAddress(ipAddress_);
 	this->setCoordinatorPortNumber(portNumber_);
 	this->setOperation(operation_);
 	this->setCounterName(counterName_);
-	this->setFbfEnable(fbfEnable_);
+	this->setbfType(type_);
 	this->setIncrement(increment_);
 	this->setTransId(transId_);
 	opTypeMapping.emplace(CREATEMESSAGE, CREATEMAPPING);
@@ -56,12 +56,12 @@ std::string Client::getCounterName() {
 	return this->counterName;
 }
 
-void Client::setFbfEnable(std::string fbfEnable_) {
-	this->fbfEnable = fbfEnable_;
+void Client::setbfType(std::string type_) {
+	this->bfType = type_;
 }
 
-std::string Client::getFbfEnable() {
-	return this->fbfEnable;
+std::string Client::getbfType() {
+	return this->bfType;
 }
 
 void Client::setIncrement(int increment_) {
@@ -82,7 +82,7 @@ int Client::getTransId() {
 
 void Client::printUsage() {
 	std::cout<<std::endl<<"Usage of CassandraSimulator Client"<<std::endl;
-	std::cout<<"./<program_name> <co_ordinator_ip_address> <co_ordinator_port_no> <create> <counter_name> <fbf/nofbf>"<<std::endl;
+	std::cout<<"./<program_name> <co_ordinator_ip_address> <co_ordinator_port_no> <create> <counter_name> <fbf/nofbf/rbf>"<<std::endl;
 	std::cout<<"./<program_name> <co_ordinator_ip_address> <co_ordinator_port_no> <increment> <counter_name> <increment_value> <transaction_id>\n";
 	std::cout<<"./<program_name> <co_ordinator_ip_address> <co_ordinator_port_no> <read> <counter_name>\n";
 	std::cout<<std::endl<<"Operations supported:\n 1) create 2) read 3) increment"<<std::endl;
@@ -123,12 +123,12 @@ bool Client::clientSenderFunc() {
 	}
 	switch(opTypeMapping[this->getOperation()]) {
 	case CREATEMAPPING: {
-		bool activateFbf = false;
-		if (this->getFbfEnable() == FBFENABLE) {
-			activateFbf = true;
+		BFtype activateFbf = noneType;
+		if (this->getbfType() == FBFENABLE) {
+			activateFbf = fbfType;
 		}
-		else {
-			activateFbf = false;
+		else if (this->getbfType() == RBFENABLE) {
+			activateFbf = rbfType;
 		}
 		std::string msgToSend = Message::createMessage(this->getCounterName(), activateFbf);
 		std::cout<<"\nMessage being sent: \n"<<msgToSend<<std::endl;
@@ -228,7 +228,7 @@ int main(int argc, char *argv[]) {
 	std::string portNumber_(argv[2]);
 	std::string operation_(argv[3]);
 	std::string counterName_;
-	std::string fbfEnable_;
+	std::string type_;
 	int value_ = 0;
 	int transId = 0;
 	if ( operation_ == CREATEMESSAGE ) {
@@ -236,13 +236,13 @@ int main(int argc, char *argv[]) {
 		std::cout<<"COUNTER CREATE"<<std::endl;
 		std::cout<<"======================\n";
 		counterName_ = std::string(argv[4]);
-		fbfEnable_ = std::string(argv[5]);
+		type_ = std::string(argv[5]);
 		/*if ( fbfEnable_ != FBFENABLE || fbfEnable_ != FBFDISABLE ) {
 			Client::printUsage();
 			return FAILURE;
 		}*/
 		std::cout<<"Counter name: "<<counterName_<<std::endl;
-		std::cout<<"FBF enable/disable: "<<fbfEnable_<<std::endl;
+		std::cout<<"FBF enable/disable: "<<type_<<std::endl;
 	}
 	else if ( operation_ == INCREMENTMESSAGE ) {
 		std::cout<<"\n======================\n";
@@ -266,7 +266,7 @@ int main(int argc, char *argv[]) {
 		Client::printUsage();
 		return FAILURE;
 	}
-	Client client(ipAddress_, atoi(portNumber_.c_str()), operation_, counterName_, fbfEnable_, value_, transId);
+	Client client(ipAddress_, atoi(portNumber_.c_str()), operation_, counterName_, type_, value_, transId);
 	if ( !client.setUpSocket() ) {
 		std::cout<<std::endl<<"Error while opening socket"<<std::endl;
 		return FAILURE;

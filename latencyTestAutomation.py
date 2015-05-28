@@ -38,7 +38,7 @@ def run_latency_test():
     print "Update on counter with FBF"
     start_fbf=datetime.datetime.now()
     for i in num_of_updates:
-        output=check_output(['./Client', coord_ip, coord_port, 'increment', counter_fbf, 1, i])
+        output=check_output(['./Client', coord_ip, coord_port, 'increment', counter_fbf, '1', i])
     end_fbf=datetime.datetime.now()
     print "Elapsed time is: "
     elapsed_fbf=end_fbf-start_fbf
@@ -47,7 +47,7 @@ def run_latency_test():
     print "Update on counter without FBF"
     start_nofbf=datetime.datetime.now()
     for i in num_of_updates:
-        output=check_output(['./Client', coord_ip, coord_port, 'increment', counter_nofbf, 1, i])
+        output=check_output(['./Client', coord_ip, coord_port, 'increment', counter_nofbf, '1', i])
     end_nofbf=datetime.datetime.now()
     print "Elapsed time is: "
     elapsed_nofbf=end_nofbf-start_nofbf

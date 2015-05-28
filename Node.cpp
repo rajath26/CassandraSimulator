@@ -245,7 +245,7 @@ void Node::handleMessage(int *ptrSD) {
 	case CREATE: {
 		int successfulResponses = 0;
 		std::string counterName_ = msgObj.getCounterName();
-		bool fbfEnable_ = msgObj.getFbfEnable();
+		BFtype type_ = msgObj.getFbfEnableType();
 		// Find the owner/leader node of the counter
 		std::vector<std::tuple<std::string, int, size_t>> local;
 		local = findLeader(counterName_);
@@ -258,7 +258,7 @@ void Node::handleMessage(int *ptrSD) {
 		//
 		if ( isThisMyIpAndPortAndHashCode(std::get<0>(local[0]), std::get<1>(local[0]), std::get<2>(local[0])) ) {
 			std::cout<<std::endl<<"This message is a local create message"<<std::endl;
-			if ( !this->createCounter(counterName_, local, fbfEnable_) ) {
+			if ( !this->createCounter(counterName_, local, type_) ) {
 				std::cout<<std::endl<<"There was an error while creating the counter at leaader node. Node IP address: "<<std::get<0>(local[0])<<". Node port number: "<<std::get<1>(local[0])<<". Node hash code: "<<std::get<2>(local[0])<<std::endl;
 			}
 			else {
@@ -267,7 +267,7 @@ void Node::handleMessage(int *ptrSD) {
 			//
 			// Send replication messages to replicas
 			//
-			std::string msgToBeSent = Message::createReplicaMessage(counterName_, fbfEnable_);
+			std::string msgToBeSent = Message::createReplicaMessage(counterName_, type_);
 			std::cout<<std::endl<<"Message to be sent to replicas: "<<msgToBeSent<<std::endl;
 			for ( int i = 1; i < local.size(); i++ ) {
 				int i_rc;
@@ -385,11 +385,11 @@ void Node::handleMessage(int *ptrSD) {
 	} // End of case CREATE
 	case CREATE_REPLICA: {
 		std::string counterName_ = msgObj.getCounterName();
-		bool fbfEnable_ = msgObj.getFbfEnable();
+		BFtype type_ = msgObj.getFbfEnableType();
 		// Find the replicas to create shards
 		std::vector<std::tuple<std::string, int, size_t>> local;
 		local = findLeader(counterName_);
-		if ( !this->createCounter(counterName_, local, fbfEnable_) ) {
+		if ( !this->createCounter(counterName_, local, type_) ) {
 			std::cout<<std::endl<<"There was an error while creating the counter at replica node."<<std::endl;
 			// send error back to leader node
 			std::string msgToBeSent = Message::errorMessage(counterName_);
@@ -849,20 +849,24 @@ std::vector<std::tuple<std::string, int, size_t>> Node::findLeader(std::string c
 	}
 }
 
-bool Node::createCounter(std::string counterName_, std::vector<std::tuple<std::string, int, size_t>> replicas, bool fbfEnable) {
+bool Node::createCounter(std::string counterName_, std::vector<std::tuple<std::string, int, size_t>> replicas, BFtype type) {
 	std::lock_guard<std::mutex> lock(this->memTableMutex);
-	Counter counterObj(fbfEnable);
+	Counter counterObj(type);
 	memTable.emplace(counterName_, counterObj);
-	if ( counterObj.getFBFenable() ) {
+	if ( counterObj.getBFtype() == fbfType ) {
 		FBF * fbfObj = new FBF(MINIMUM_NUMBER_OF_BFS, 25000, 5, 30, 0.001, true);
 		fbfMap[counterName_] = fbfObj;
+	}
+	else if  ( counterObj.getBFtype() == rbfType ) {
+		RecycleBloomFilter * rbfObj = new RecycleBloomFilter(25000, 5, 0.001);
+		rBFMap[counterName_] = rbfObj;
 	}
 	return true;
 }
 
 bool Node::incrementCounterLocal(std::string counterName_, std::vector<std::tuple<std::string, int, size_t>>, int increment_, int transId) {
 	std::cout<<"\n\nThe transaction id is: "<<transId<<"\n";
-	if ( (&memTable[counterName_])->getFBFenable() ) {
+	if ( (&memTable[counterName_])->getBFtype() == fbfType ) {
 		// FBF enabled
 		if ( fbfMap[counterName_]->membershipCheck(transId) ) {
 			// If found in FBF, this transaction is already completed
@@ -872,6 +876,23 @@ bool Node::incrementCounterLocal(std::string counterName_, std::vector<std::tupl
 		else {
 			// If not found in FBF
 			fbfMap[counterName_]->insert(transId);
+			std::lock_guard<std::mutex> lock(this->memTableMutex);
+			return (&memTable[counterName_])->addLocalShard(this->getMyHashCode(), increment_);
+		}
+	}
+	else if  ( (&memTable[counterName_])->getBFtype() == rbfType ) {
+		// rBF enabled
+		std::cout<<std::endl<<"This is rBF enabled"<<std::endl;
+		if ( rBFMap[counterName_]->membershipCheck(transId) ) {
+			std::cout<<std::endl<<"Membership check done"<<std::endl;
+			// If found in rBF, this transaction is already completed
+			std::cout<<std::endl<<std::endl<<"THIS IS A DUPLICATE. rBF GUARANTEES IDEMPOTENT UPDATES."<<std::endl<<std::endl;
+			return false;
+		}
+		else {
+			std::cout<<std::endl<<"Membership check failed"<<std::endl;
+			// If not found in rBF
+			rBFMap[counterName_]->insert(transId);
 			std::lock_guard<std::mutex> lock(this->memTableMutex);
 			return (&memTable[counterName_])->addLocalShard(this->getMyHashCode(), increment_);
 		}
@@ -886,7 +907,7 @@ bool Node::incrementCounterLocal(std::string counterName_, std::vector<std::tupl
 
 bool Node::incrementCounterRemote(std::string counterName_, std::vector<std::tuple<std::string, int, size_t>>, size_t nodeId_, long logical_ts, long value_, int transId) {
 	std::cout<<"\n\nThe transaction id is: "<<transId<<"\n";
-	if ( (&memTable[counterName_])->getFBFenable() ) {
+	if ( (&memTable[counterName_])->getBFtype() == fbfType ) {
 		// FBF enabled
 		if ( fbfMap[counterName_]->membershipCheck(transId) ) {
 			// If found in FBF, this transaction is already completed
@@ -896,6 +917,20 @@ bool Node::incrementCounterRemote(std::string counterName_, std::vector<std::tup
 		else {
 			// If not found in FBF
 			fbfMap[counterName_]->insert(transId);
+			std::lock_guard<std::mutex> lock(this->memTableMutex);
+			return (&memTable[counterName_])->addRemoteShard(nodeId_, logical_ts, value_);
+		}
+	}
+	else if ( (&memTable[counterName_])->getBFtype() == rbfType ) {
+		// rBF enabled
+		if ( rBFMap[counterName_]->membershipCheck(transId) ) {
+			// If found in rBF, this transaction is already completed
+			std::cout<<std::endl<<std::endl<<"THIS IS A DUPLICATE. rBF GUARANTEES IDEMPOTENT UPDATES."<<std::endl<<std::endl;
+			return false;
+		}
+		else {
+			// If not found in rBF
+			rBFMap[counterName_]->insert(transId);
 			std::lock_guard<std::mutex> lock(this->memTableMutex);
 			return (&memTable[counterName_])->addRemoteShard(nodeId_, logical_ts, value_);
 		}

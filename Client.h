@@ -20,12 +20,12 @@ private:
 	struct sockaddr_in coordinatorAddress;
 	std::string operation;
 	std::string counterName;
-	std::string fbfEnable;
+	std::string bfType;
 	std::map<std::string, int> opTypeMapping;
 	int increment;
 	int transId;
 public:
-	Client(std::string ipAddress_, int portNumber_, std::string operation_, std::string counterName, std::string fbfEnable, int increment_, int transId_);
+	Client(std::string ipAddress_, int portNumber_, std::string operation_, std::string counterName, std::string type_, int increment_, int transId_);
 	virtual ~Client();
 	static void printUsage();
 	static void printWelcome();
@@ -37,8 +37,8 @@ public:
 	std::string getOperation();
 	void setCounterName(std::string counterName_);
 	std::string getCounterName();
-	void setFbfEnable(std::string fbfEnable_);
-	std::string getFbfEnable();
+	void setbfType(std::string type_);
+	std::string getbfType();
 	void setIncrement(int increment_);
 	int getIncrement();
 	void setTransId(int transId_);
