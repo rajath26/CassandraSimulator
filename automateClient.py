@@ -27,9 +27,9 @@ counter_rbf = sys.argv[5]
 tries = sys.argv[6]
 x = int(tries)
 
-sleepTimes=[4,1,2,3]
-retryList=[10,18,26,30,48]
-retryIndex=[1,2,3,4]
+sleepTimes=[1,2,3]
+retryList=[10,20,18,26,30,35,48]
+retryIndex=[1,2,3]
 
 print coordIpAddr
 print coordPortNum
@@ -151,6 +151,6 @@ output = check_output(['./Client', coordIpAddr, coordPortNum, 'read', counter_no
 print output
 output = check_output(['./Client', coordIpAddr, coordPortNum, 'read', counter_rbf])
 print output
-
+print "Expected Value: " + str(exp_count)
 print "Number of increments: " + str(count)
 print "Number of retries: " + str(retries)
