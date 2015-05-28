@@ -29,6 +29,7 @@ x = int(tries)
 
 sleepTimes=[4,6,2,3]
 retryList=[10,18,26,30,48]
+retryIndex=[1,2,3,4]
 
 print coordIpAddr
 print coordPortNum
@@ -74,8 +75,10 @@ for x in range(1, x):
 		row2.append("retry")
 		res_exp.writerow(row2)
 		results_expected.flush()
-
-		output = check_output(['./Client', coordIpAddr, coordPortNum, 'increment', counter_fbf, '1', str(x-1)])
+		
+		idx=random.choice(retryIndex)
+		
+		output = check_output(['./Client', coordIpAddr, coordPortNum, 'increment', counter_fbf, '1', str(x-idx)])
 		print output
 		row.append(str(time.strftime("%H:%M:%S")))
 		val = check_output(['./Client', coordIpAddr, coordPortNum, 'read', counter_fbf])
@@ -85,7 +88,7 @@ for x in range(1, x):
 		res_fbf.writerow(row)
 		results_fbf.flush()
 
-		output = check_output(['./Client', coordIpAddr, coordPortNum, 'increment', counter_nofbf, '1', str(x-1)])
+		output = check_output(['./Client', coordIpAddr, coordPortNum, 'increment', counter_nofbf, '1', str(x-idx)])
 		print output
 		row1.append(str(time.strftime("%H:%M:%S")))
 		val1 = check_output(['./Client', coordIpAddr, coordPortNum, 'read', counter_nofbf])
@@ -95,7 +98,7 @@ for x in range(1, x):
 		res_nofbf.writerow(row1)
 		results_nofbf.flush()
 		
-		output = check_output(['./Client', coordIpAddr, coordPortNum, 'increment', counter_rbf, '1', str(x-1)])
+		output = check_output(['./Client', coordIpAddr, coordPortNum, 'increment', counter_rbf, '1', str(x-idx)])
 		print output
 		row3.append(str(time.strftime("%H:%M:%S")))
 		val3 = check_output(['./Client', coordIpAddr, coordPortNum, 'read', counter_rbf])
