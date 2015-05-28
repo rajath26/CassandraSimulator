@@ -27,7 +27,7 @@ counter_rbf = sys.argv[5]
 tries = sys.argv[6]
 x = int(tries)
 
-sleepTimes=[4,6,2,3]
+sleepTimes=[4,1,2,3]
 retryList=[10,18,26,30,48]
 retryIndex=[1,2,3,4]
 

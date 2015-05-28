@@ -10,9 +10,9 @@ from matplotlib.dates import MinuteLocator, SecondLocator, DateFormatter
 ##
 
 def usage():
-    print "Usage : python plotResults <fbf_csv> <nonFbf_csv> <expected_counter>"
+    print "Usage : python plotResults <fbf_csv> <nonFbf_csv> <expected_counter> <rbf_counter>"
 
-if len(sys.argv) != 4:
+if len(sys.argv) != 5:
     print "Invalid usage"
     usage()
     sys.exit()
@@ -23,6 +23,8 @@ time2 = []
 noFbfCounter = []
 time3 = []
 expCounter = []
+time4 = []
+rbfCounter = []
 retryMarker1 = []
 retryMarker1Time = []
 retryMarker2 = []
@@ -32,10 +34,14 @@ retryIndex2 = []
 retryMarker3 = []
 retryMarker3Time = []
 retryIndex3 = []
+retryMarker4 = []
+retryMarker4Time = []
+retryIndex4 = []
 
 fbfFile = sys.argv[1]
 noFbfFile = sys.argv[2]
 expFile = sys.argv[3]
+rbfFile = sys.argv[4]
 
 with open(fbfFile, 'rU') as f1:
     try:
@@ -110,6 +116,30 @@ with open(expFile, 'rU') as f3:
 
     time31 = [datetime.datetime.strptime(s, '%H:%M:%S') for s in time3]
     retryTime31 = [datetime.datetime.strptime(s, '%H:%M:%S') for s in retryMarker3Time]
+    
+with open(fbfFile, 'rU') as f4:
+    try:
+        reader4 = csv.reader(f4, delimiter=',')
+        for row4 in reader4:
+            time4.append(row4[0])
+            try:
+                rbfCounter.append(float(row4[1]))
+            except ValueError:
+                continue
+            try:
+                if str(row4[2]) == "retry":
+                    retryMarker4.append(float(row4[1]))
+                    retryMarker4Time.append(row4[0])
+                    index=int(len(rbfCounter))-2
+                    retryIndex4.append(index)
+            except IndexError:
+                continue
+            
+    finally:
+        f4.close
+        
+    time41 = [datetime.datetime.strptime(s, '%H:%M:%S') for s in time4]
+    retryTime41 = [datetime.datetime.strptime(s, '%H:%M:%S') for s in retryMarker4Time]
 
 fig = plt.figure(figsize=(6,5))
 #plt.title("Idempotent Updates using a FBF")
@@ -141,18 +171,29 @@ for i in range(0,len(retryIndex3)):
         retryMarker3New.append(expCounter[retryIndex3[i]])
     except IndexError:
         continue
+retryTime41New = []
+retryMarker4New = []
+for i in range(0,len(retryIndex4)):
+    try:
+        retryTime41New.append(time41[retryIndex4[i]])
+        retryMarker4New.append(expCounter[retryIndex4[i]])
+    except IndexError:
+        continue    
 for i in range(0,len(retryMarker2New)):
     ln4 = ax.plot([retryTime21New[i]], [retryMarker2New[i]], 'r*', label="Retry")
 for i in range(0,len(retryMarker1New)):
     ln5 = ax.plot([retryTime11New[i]], [retryMarker1New[i]], 'r*', label="Retry")
 for i in range(0,len(retryMarker3New)):
     ln6 = ax.plot([retryTime31New[i]], [retryMarker3New[i]], 'r*', label="Retry")
+for i in range(0,len(retryMarker4New)):
+    ln6 = ax.plot([retryTime41New[i]], [retryMarker4New[i]], 'r*', label="Retry")
 
 
 ln1 = ax.step(time11, fbfCounter, linestyle='-', label="Counter with FBF enabled", lw=1)
 #ln1.set_marker('--')
 ln3 = ax.step(time31, expCounter, linestyle='--', label="Expected Counter value", lw=1)
 ln2 = ax.step(time21, noFbfCounter, linestyle=':', label="Counter with FBF disabled", lw=1)
+ln7 = ax.step(time41, rbfCounter, linestyle='-.', label="Counter with Recycling Bloom Filter", lw=1)
 #ln2.set_marker(':')
 #ln3.set_marker('-.')
 
@@ -160,11 +201,11 @@ minutes = MinuteLocator()
 seconds = SecondLocator()
 ax.xaxis.set_major_locator(minutes)
 ax.xaxis.set_minor_locator(seconds)
-ax.xaxis.set_major_formatter(DateFormatter("%H:%M:%S"))
+ax.xaxis.set_major_formatter(DateFormatter("%H:%M"))
 ax = plt.gca()
 
 #lns = ln1 + ln2 + ln3 + ln4 + ln5 + ln6
-lns = ln1 + ln2 + ln3 + ln4
+lns = ln1 + ln2 + ln3 + ln7 + ln4
 labs = [l.get_label() for l in lns]
 ax.legend(lns, labs, loc='upper left', prop={'size':10})
 
