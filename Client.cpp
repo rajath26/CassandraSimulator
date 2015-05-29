@@ -21,7 +21,7 @@ Client::Client(std::string ipAddress_, int portNumber_, std::string operation_, 
 }
 
 Client::~Client() {
-	// TODO Auto-generated destructor stub
+	close(this->tcp);
 }
 
 void Client::setCoordinatorIpAddress(std::string ipAddress_) {
@@ -132,7 +132,7 @@ bool Client::clientSenderFunc() {
 		}
 		std::string msgToSend = Message::createMessage(this->getCounterName(), activateFbf);
 		std::cout<<"\nMessage being sent: \n"<<msgToSend<<std::endl;
-		numOfBytesSent = tcp::sendTCP(this->tcp, msgToSend);
+		numOfBytesSent = tcp::sendTCP(&(this->tcp), msgToSend);
 		if (SUCCESS == numOfBytesSent) {
 			tcp::sendError();
 			return false;
@@ -142,7 +142,7 @@ bool Client::clientSenderFunc() {
 	case INCREMENTMAPPING: {
 		std::string msgToSend = Message::incrementMessage(this->getCounterName(), this->getIncrement(), this->getTransId());
 		std::cout<<"\nMessage being sent: \n"<<msgToSend<<std::endl;
-		numOfBytesSent = tcp::sendTCP(this->tcp, msgToSend);
+		numOfBytesSent = tcp::sendTCP(&(this->tcp), msgToSend);
 		if (SUCCESS == numOfBytesSent) {
 			tcp::sendError();
 			return false;
@@ -152,7 +152,7 @@ bool Client::clientSenderFunc() {
 	case READMAPPING: {
 		std::string msgToSend = Message::readMessage(this->getCounterName());
 		std::cout<<"\nMessage being sent: \n"<<msgToSend<<std::endl;
-		numOfBytesSent = tcp::sendTCP(this->tcp, msgToSend);
+		numOfBytesSent = tcp::sendTCP(&(this->tcp), msgToSend);
 		if (SUCCESS == numOfBytesSent) {
 			tcp::sendError();
 			return false;
@@ -170,12 +170,14 @@ bool Client::clientSenderFunc() {
 bool Client::clientRecvFunc() {
 	std::string recMsg;
 	recMsg.clear();
-	recMsg = tcp::recvTCP(this->tcp);
+	recMsg = tcp::recvTCP(&(this->tcp));
 	if ( recMsg.size() == SUCCESS ) {
 		tcp::recvError();
 		return false;
 	}
 	recMsg.shrink_to_fit();
+	//std::cout<<std::endl<<"  INFO :: RECEIVED MESSAGE IS: "<<std::endl;
+	//std::cout<<std::endl<<recMsg<<std::endl;
 	Message msgObj;
 	msgObj.extractOpCode(recMsg);
 	std::cout<<std::endl<<std::endl<<"Message being received: "<<recMsg<<std::endl<<std::endl;

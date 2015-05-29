@@ -144,7 +144,7 @@ bool Node::joinLeader(std::string leaderIpAddress_, int leaderPortNumber_) {
 	std::cout<<"Connected successfully to leader node"<<std::endl;
 	std::string messageToBeSent = Message::createJoinMessage(this->ipAddress, this->portNumber);
 	std::cout<<std::endl<<"Message to be sent to leader: "<<messageToBeSent<<std::endl;
-	numOfBytesSent = tcp::sendTCP(leaderSocket, messageToBeSent);
+	numOfBytesSent = tcp::sendTCP(&leaderSocket, messageToBeSent);
 	if ( SUCCESS == numOfBytesSent || FAILURE == numOfBytesSent ) {
 		tcp::sendError();
 		close(leaderSocket);
@@ -180,7 +180,7 @@ void Node::recieveMessages() {
 	std::cout<<"########################"<<std::endl;
 	struct sockaddr_in recvAddress;
 	socklen_t len;
-	std::vector<std::thread> handlers;
+	std::thread thread_to_join_handlers = std::thread(&Node::joinHandlersFunc, this);
 	while (runReceiverThread) {
 		listen(this->tcp, LISTEN_QUEUE_LENGTH);
 		while (runReceiverThread) {
@@ -188,27 +188,36 @@ void Node::recieveMessages() {
 			int clientSD;
 			ptrSD = new int;
 			len = sizeof(recvAddress);
-			clientSD = accept(this->tcp, (struct sockaddr *)&recvAddress, &len);
-			if ( clientSD < SUCCESS ) {
+			//clientSD = accept(this->tcp, (struct sockaddr *)&recvAddress, &len);
+			*ptrSD = accept(this->tcp, (struct sockaddr *)&recvAddress, &len);
+			//if ( clientSD < SUCCESS ) {
+			if ( ptrSD < SUCCESS ) {
 				 if ( EINTR == errno ) {
 					 std::cout<<std::endl<<"Interrupted system call??"<<std::endl;
 				     continue;
 				 }
 			}
-			*ptrSD = clientSD;
+			//*ptrSD = clientSD;
 			std::cout<<std::endl<<"Successfully accepted socket"<<std::endl;
 			handlers.emplace_back(std::thread(&Node::handleMessage, this, ptrSD));
+			//handlers.back().detach();
 		} // End of inner while
 	} // End of outer while
-	for ( auto& th: handlers ) {
+	thread_to_join_handlers.join();
+}
+
+void Node::joinHandlersFunc() {
+	std::this_thread::sleep_for(chrono::seconds(5));
+	for ( auto& th: this->handlers ) {
 		th.join();
 	}
 }
 
-void Node::handleMessage(int *ptrSD) {
+void Node::handleMessage(int *clientSD) {
 	Message msgObj;
 	int numOfBytesRec = 0;
-	int clientSD = *ptrSD;
+	//int clientSD = *ptrSD;
+	//int *clientSD = ptrSD;
 	std::string recMsg;
 	std::cout<<std::endl<<"@@@@@@@@@@@@@@"<<std::endl;
 	std::cout<<"Entering thread function"<<std::endl;
@@ -278,7 +287,7 @@ void Node::handleMessage(int *ptrSD) {
 				replicaSocket = socket(AF_INET, SOCK_STREAM, 0);
 				if ( FAILURE == replicaSocket ) {
 					tcp::socketError();
-					//break;
+					break;
 				}
 				memset(&replicaAddr, 0, sizeof(struct sockaddr_in));
 				replicaAddr.sin_family = AF_INET;
@@ -288,21 +297,21 @@ void Node::handleMessage(int *ptrSD) {
 				if ( SUCCESS != i_rc ) {
 					tcp::connectError();
 					close(replicaSocket);
-					//break;
+					break;
 				}
 				std::cout<<"Connected successfully to replica node"<<std::endl;
-				numOfBytesSent = tcp::sendTCP(replicaSocket, msgToBeSent);
+				numOfBytesSent = tcp::sendTCP(&replicaSocket, msgToBeSent);
 				if ( SUCCESS == numOfBytesSent || FAILURE == numOfBytesSent ) {
 					tcp::sendError();
 					close(replicaSocket);
-					//break;
+					break;
 				}
 				std::cout<<"Successfully sent message to the replica"<<std::endl;
-				msgRecv = tcp::recvTCP(replicaSocket);
+				msgRecv = tcp::recvTCP(&replicaSocket);
 				if ( SUCCESS == msgRecv.size() || FAILURE == msgRecv.size() ) {
 					tcp::recvError();
 					close(replicaSocket);
-					//break;
+					break;
 				}
 				successfulResponses++;
 				close(replicaSocket);
@@ -317,8 +326,8 @@ void Node::handleMessage(int *ptrSD) {
 				int numOfBytesSent = tcp::sendTCP(clientSD, msgToBeSent);
 				if ( SUCCESS == numOfBytesSent || FAILURE == numOfBytesSent ) {
 					tcp::sendError();
-					close(clientSD);
-					//break;
+					//close(*clientSD);
+					break;
 				}
 			}
 			else {
@@ -327,8 +336,8 @@ void Node::handleMessage(int *ptrSD) {
 				int numOfBytesSent = tcp::sendTCP(clientSD, msgToBeSent);
 				if ( SUCCESS == numOfBytesSent || FAILURE == numOfBytesSent ) {
 					tcp::sendError();
-					close(clientSD);
-					//break;
+					//close(*clientSD);
+					break;
 				}
 			}
 		} // End of if local
@@ -342,7 +351,7 @@ void Node::handleMessage(int *ptrSD) {
 			peerLeaderSocket = socket(AF_INET, SOCK_STREAM, 0);
 			if ( FAILURE == peerLeaderSocket ) {
 				tcp::socketError();
-				//break;
+				break;
 			}
 			memset(&peerLeaderAddress, 0, sizeof(struct sockaddr_in));
 			peerLeaderAddress.sin_family = AF_INET;
@@ -352,34 +361,34 @@ void Node::handleMessage(int *ptrSD) {
 			if ( SUCCESS != i_rc ) {
 				tcp::connectError();
 				close(peerLeaderSocket);
-				//break;
+				break;
 			}
 			std::cout<<"Connected successfully to leader node during peer routing"<<std::endl;
 			// send a message to the peer leader
-			numOfBytesSent = tcp::sendTCP(peerLeaderSocket, recMsg);
+			numOfBytesSent = tcp::sendTCP(&peerLeaderSocket, recMsg);
 			if ( SUCCESS == numOfBytesSent || FAILURE == numOfBytesSent ) {
 				tcp::sendError();
 				close(peerLeaderSocket);
-				//break;
+				break;
 			}
 			std::cout<<"Successfully sent message to the leader during peer routing"<<std::endl;
 			// get a response from the peer leader
-			std::string response = tcp::recvTCP(peerLeaderSocket);
+			std::string response = tcp::recvTCP(&peerLeaderSocket);
 			if ( SUCCESS == response.size() || FAILURE == response.size() ) {
 				tcp::recvError();
 				close(peerLeaderSocket);
-				//break;
+				break;
 			}
 			std::cout<<"Got response from leader during peer routing"<<std::endl;
 			// send a message back to the client
 			numOfBytesSent = tcp::sendTCP(clientSD, response);
 			if ( SUCCESS == numOfBytesSent || FAILURE == numOfBytesSent ) {
 				tcp::sendError();
-				close(clientSD);
-				//break;
+				//close(*clientSD);
+				break;
 			}
 			close(peerLeaderSocket);
-			close(clientSD);
+			//close(*clientSD);
 		} // End of peer routing
 		break;
 	} // End of case CREATE
@@ -396,7 +405,7 @@ void Node::handleMessage(int *ptrSD) {
 			int numOfBytesSent = tcp::sendTCP(clientSD, msgToBeSent);
 			if ( SUCCESS == numOfBytesSent || FAILURE == numOfBytesSent ) {
 				tcp::sendError();
-				close(clientSD);
+				//close(*clientSD);
 				break;
 			}
 		}
@@ -405,10 +414,11 @@ void Node::handleMessage(int *ptrSD) {
 			int numOfBytesSent = tcp::sendTCP(clientSD, msgToBeSent);
 			if ( SUCCESS == numOfBytesSent || FAILURE == numOfBytesSent ) {
 				tcp::sendError();
-				close(clientSD);
+				//close(*clientSD);
 				break;
 			}
 		}
+		//close(*clientSD);
 		break;
 	} // End of case CREATE_REPLICA
 	case INCREMENT: {
@@ -448,7 +458,7 @@ void Node::handleMessage(int *ptrSD) {
 				replicaSocket = socket(AF_INET, SOCK_STREAM, 0);
 				if ( FAILURE == replicaSocket ) {
 					tcp::socketError();
-					//break;
+					break;
 				}
 				memset(&replicaAddr, 0, sizeof(struct sockaddr_in));
 				replicaAddr.sin_family = AF_INET;
@@ -458,21 +468,21 @@ void Node::handleMessage(int *ptrSD) {
 				if ( SUCCESS != i_rc ) {
 					tcp::connectError();
 					close(replicaSocket);
-					//break;
+					break;
 				}
 				std::cout<<"Connected successfully to replica node"<<std::endl;
-				numOfBytesSent = tcp::sendTCP(replicaSocket, msgToBeSent);
+				numOfBytesSent = tcp::sendTCP(&replicaSocket, msgToBeSent);
 				if ( SUCCESS == numOfBytesSent || FAILURE == numOfBytesSent ) {
 					tcp::sendError();
 					close(replicaSocket);
-					//break;
+					break;
 				}
 				std::cout<<"Successfully sent message to the replica"<<std::endl;
-				msgRecv = tcp::recvTCP(replicaSocket);
+				msgRecv = tcp::recvTCP(&replicaSocket);
 				if ( SUCCESS == msgRecv.size() || FAILURE == msgRecv.size() ) {
 					tcp::recvError();
 					close(replicaSocket);
-					//break;
+					break;
 				}
 				successfulResponses++;
 				close(replicaSocket);
@@ -487,8 +497,8 @@ void Node::handleMessage(int *ptrSD) {
 				int numOfBytesSent = tcp::sendTCP(clientSD, msgToBeSent);
 				if ( SUCCESS == numOfBytesSent || FAILURE == numOfBytesSent ) {
 					tcp::sendError();
-					close(clientSD);
-					//break;
+					//close(*clientSD);
+					break;
 				}
 			}
 			else {
@@ -496,8 +506,8 @@ void Node::handleMessage(int *ptrSD) {
 				int numOfBytesSent = tcp::sendTCP(clientSD, msgToBeSent);
 				if ( SUCCESS == numOfBytesSent || FAILURE == numOfBytesSent ) {
 					tcp::sendError();
-					close(clientSD);
-					//break;
+					//close(*clientSD);
+					break;
 				}
 			}
 		} // End of if local
@@ -511,7 +521,7 @@ void Node::handleMessage(int *ptrSD) {
 			peerLeaderSocket = socket(AF_INET, SOCK_STREAM, 0);
 			if ( FAILURE == peerLeaderSocket ) {
 				tcp::socketError();
-				//break;
+				break;
 			}
 			memset(&peerLeaderAddress, 0, sizeof(struct sockaddr_in));
 			peerLeaderAddress.sin_family = AF_INET;
@@ -521,34 +531,35 @@ void Node::handleMessage(int *ptrSD) {
 			if ( SUCCESS != i_rc ) {
 				tcp::connectError();
 				close(peerLeaderSocket);
-				//break;
+				break;
 			}
 			std::cout<<"Connected successfully to leader node during peer routing"<<std::endl;
 			// send a message to the peer leader
-			numOfBytesSent = tcp::sendTCP(peerLeaderSocket, recMsg);
+			std::cout<<"Message being sent: "<<recMsg<<std::endl;
+			numOfBytesSent = tcp::sendTCP(&peerLeaderSocket, recMsg);
 			if ( SUCCESS == numOfBytesSent || FAILURE == numOfBytesSent ) {
 				tcp::sendError();
 				close(peerLeaderSocket);
-				//break;
+				break;
 			}
 			std::cout<<"Successfully sent message to the leader during peer routing"<<std::endl;
 			// get a response from the peer leader
-			std::string response = tcp::recvTCP(peerLeaderSocket);
+			std::string response = tcp::recvTCP(&peerLeaderSocket);
 			if ( SUCCESS == response.size() || FAILURE == response.size() ) {
 				tcp::recvError();
 				close(peerLeaderSocket);
-				//break;
+				break;
 			}
 			std::cout<<"Got response from leader during peer routing"<<std::endl;
 			// send a message back to the client
 			numOfBytesSent = tcp::sendTCP(clientSD, response);
 			if ( SUCCESS == numOfBytesSent || FAILURE == numOfBytesSent ) {
 				tcp::sendError();
-				close(clientSD);
-				//break;
+				//close(*clientSD);
+				break;
 			}
 			close(peerLeaderSocket);
-			close(clientSD);
+			//close(*clientSD);
 		} // End of peer routing
 		break;
 	} // End of CASE INCREMENT
@@ -564,7 +575,7 @@ void Node::handleMessage(int *ptrSD) {
 			int numOfBytesSent = tcp::sendTCP(clientSD, msgToBeSent);
 			if ( SUCCESS == numOfBytesSent || FAILURE == numOfBytesSent ) {
 				tcp::sendError();
-				close(clientSD);
+				//close(*clientSD);
 				break;
 			}
 		}
@@ -573,10 +584,11 @@ void Node::handleMessage(int *ptrSD) {
 			int numOfBytesSent = tcp::sendTCP(clientSD, msgToBeSent);
 			if ( SUCCESS == numOfBytesSent || FAILURE == numOfBytesSent ) {
 				tcp::sendError();
-				close(clientSD);
+				//close(*clientSD);
 				break;
 			}
 		}
+		close(*clientSD);
 		break;
 	} // End of case INCREMENT_REPLICA
 	case READ: {
@@ -613,8 +625,8 @@ void Node::handleMessage(int *ptrSD) {
 				int numOfBytesSent = tcp::sendTCP(clientSD, msgToBeSent);
 				if ( SUCCESS == numOfBytesSent || FAILURE == numOfBytesSent ) {
 					tcp::sendError();
-					close(clientSD);
-					//break;
+					//close(*clientSD);
+					break;
 				}
 			}
 			else {
@@ -623,8 +635,8 @@ void Node::handleMessage(int *ptrSD) {
 				int numOfBytesSent = tcp::sendTCP(clientSD, msgToBeSent);
 				if ( SUCCESS == numOfBytesSent || FAILURE == numOfBytesSent ) {
 					tcp::sendError();
-					close(clientSD);
-					//break;
+					//close(*clientSD);
+					break;
 				}
 			}
 		} // End of if local
@@ -638,7 +650,7 @@ void Node::handleMessage(int *ptrSD) {
 			peerLeaderSocket = socket(AF_INET, SOCK_STREAM, 0);
 			if ( FAILURE == peerLeaderSocket ) {
 				tcp::socketError();
-				//break;
+				break;
 			}
 			memset(&peerLeaderAddress, 0, sizeof(struct sockaddr_in));
 			peerLeaderAddress.sin_family = AF_INET;
@@ -648,41 +660,43 @@ void Node::handleMessage(int *ptrSD) {
 			if ( SUCCESS != i_rc ) {
 				tcp::connectError();
 				close(peerLeaderSocket);
-				//break;
+				break;
 			}
 			std::cout<<"Connected successfully to leader node during peer routing"<<std::endl;
 			// send a message to the peer leader
-			numOfBytesSent = tcp::sendTCP(peerLeaderSocket, recMsg);
+			numOfBytesSent = tcp::sendTCP(&peerLeaderSocket, recMsg);
 			if ( SUCCESS == numOfBytesSent || FAILURE == numOfBytesSent ) {
 				tcp::sendError();
 				close(peerLeaderSocket);
-				//break;
+				break;
 			}
 			std::cout<<"Successfully sent message to the leader during peer routing"<<std::endl;
 			// get a response from the peer leader
-			std::string response = tcp::recvTCP(peerLeaderSocket);
+			std::string response = tcp::recvTCP(&peerLeaderSocket);
 			if ( SUCCESS == response.size() || FAILURE == response.size() ) {
 				tcp::recvError();
 				close(peerLeaderSocket);
-				//break;
+				break;
 			}
 			std::cout<<"Got response from leader during peer routing"<<std::endl;
 			// send a message back to the client
 			numOfBytesSent = tcp::sendTCP(clientSD, response);
 			if ( SUCCESS == numOfBytesSent || FAILURE == numOfBytesSent ) {
 				tcp::sendError();
-				close(clientSD);
-				//break;
+				//close(*clientSD);
+				break;
 			}
 			close(peerLeaderSocket);
-			close(clientSD);
+			//close(*clientSD);
 		} // End of peer routing
+		//close(*clientSD);
 		break;
 	} // End of case READ
 	default:
 		std::cout<<std::endl<<"Received unknown message type. Node IP Address: "<<msgObj.getIpAddress()<<" . Node port number: "<<msgObj.getPortNumber()<<std::endl;
 		break;
 	}
+	close(*clientSD);
 	return;
 }
 
@@ -771,7 +785,7 @@ bool Node::sendRing() {
 				return false;
 			}
 			std::cout<<"Connected successfully to peer node"<<std::endl;
-			numOfBytesSent = tcp::sendTCP(peerSocket, msgToBeSent);
+			numOfBytesSent = tcp::sendTCP(&peerSocket, msgToBeSent);
 			if ( SUCCESS == numOfBytesSent || FAILURE == numOfBytesSent ) {
 				tcp::sendError();
 				close(peerSocket);
@@ -854,11 +868,11 @@ bool Node::createCounter(std::string counterName_, std::vector<std::tuple<std::s
 	Counter counterObj(type);
 	memTable.emplace(counterName_, counterObj);
 	if ( counterObj.getBFtype() == fbfType ) {
-		FBF * fbfObj = new FBF(MINIMUM_NUMBER_OF_BFS, 25000, 5, 30, 0.001, true);
+		FBF * fbfObj = new FBF(MINIMUM_NUMBER_OF_BFS, 500, 3, 1, 0.001, false);
 		fbfMap[counterName_] = fbfObj;
 	}
 	else if  ( counterObj.getBFtype() == rbfType ) {
-		RecycleBloomFilter * rbfObj = new RecycleBloomFilter(25000, 5, 0.001);
+		RecycleBloomFilter * rbfObj = new RecycleBloomFilter(1500, 3, 0.001);
 		rBFMap[counterName_] = rbfObj;
 	}
 	return true;

@@ -37,9 +37,9 @@ void tcp::connectError() {
 	std::cout<<"Exiting.... ... .. . . ."<<std::endl;
 }
 
-int tcp::sendTCP(int sd, std::string buffer) {
+int tcp::sendTCP(int *sd, std::string buffer) {
 	int numOfBytesSent;
-	numOfBytesSent = send(sd, buffer.c_str(), buffer.size(), 0);
+	numOfBytesSent = send(*sd, buffer.c_str(), buffer.size(), 0);
 	return numOfBytesSent;
 }
 
@@ -48,10 +48,10 @@ void tcp::sendError() {
 	std::cout<<"Exiting.... ... .. . . ."<<std::endl;
 }
 
-std::string tcp::recvTCP(int sd) {
+std::string tcp::recvTCP(int *sd) {
 	int numOfBytesRec;
 	char buf[LONG_BUF_SZ];
-	numOfBytesRec = recv(sd, buf, LONG_BUF_SZ, 0);
+	numOfBytesRec = recv(*sd, buf, LONG_BUF_SZ, 0);
 	std::string buffer(buf);
 	//std::cout<<std::endl<<"Message received in tcp::recvTCP: "<<buffer<<std::endl;
 	return buffer;

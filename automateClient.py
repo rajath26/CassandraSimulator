@@ -12,27 +12,34 @@ import random
 ###
 
 def usage():
-	print "usage: python automateClient.py <coordinator_ip> <coordinator_port> <counter_fbf> <counter_nofbf> <counter_rbf> <tries>"
+	print "usage: python automateClient.py <counter_fbf> <counter_nofbf> <counter_rbf> <tries> [<coordinator_ip> <coordinator_port>,....]"
 
-if len(sys.argv) != 7:
+if len(sys.argv) < 7:
 	print "Invalid usage"
 	usage()
 	sys.exit()
 
-coordIpAddr = sys.argv[1]
-coordPortNum = sys.argv[2]
-counter_fbf = sys.argv[3]
-counter_nofbf = sys.argv[4]
-counter_rbf = sys.argv[5]
-tries = sys.argv[6]
+coordipList = []
+coordportList = []
+counter_fbf = sys.argv[1]
+counter_nofbf = sys.argv[2]
+counter_rbf = sys.argv[3]
+tries = sys.argv[4]
 x = int(tries)
+for i in range(5,len(sys.argv)):
+	if i%2 != 0:
+		coordipList.append(str(sys.argv[i]))
+	else:
+		coordportList.append(str(sys.argv[i]))
 
-sleepTimes=[1,2,3]
-retryList=[10,20,18,26,30,35,48]
-retryIndex=[1,2,3]
+randomList = [i for i in range(0,len(coordipList))]
 
-print coordIpAddr
-print coordPortNum
+sleepTimes=[1]
+retryList=[5]
+retryIndex=[1,2,3,4,5,6,7,8,9,10]
+
+print coordipList
+print coordportList
 
 results_fbf = "./Results/results_fbf" + datetime.datetime.now().isoformat() + ".csv"
 results_nofbf = "./Results/results_nofbf" + datetime.datetime.now().isoformat() + ".csv"
@@ -49,11 +56,23 @@ res_exp = csv.writer(results_expected, delimiter=',')
 
 exp_count=0
 
+index=random.choice(randomList)
+coordIpAddr=coordipList[index]
+coordPortNum=coordportList[index]
+
 output = check_output(['./Client', coordIpAddr, coordPortNum, 'create', counter_fbf, 'fbf'])
 print output
 
+index=random.choice(randomList)
+coordIpAddr=coordipList[index]
+coordPortNum=coordportList[index]
+
 output = check_output(['./Client', coordIpAddr, coordPortNum, 'create', counter_nofbf, 'nofbf'])
 print output
+
+index=random.choice(randomList)
+coordIpAddr=coordipList[index]
+coordPortNum=coordportList[index]
 
 output = check_output(['./Client', coordIpAddr, coordPortNum, 'create', counter_rbf, 'rbf'])
 print output
@@ -78,6 +97,10 @@ for x in range(1, x):
 		
 		idx=random.choice(retryIndex)
 		
+		index=random.choice(randomList)
+		coordIpAddr=coordipList[index]
+		coordPortNum=coordportList[index]
+		
 		output = check_output(['./Client', coordIpAddr, coordPortNum, 'increment', counter_fbf, '1', str(x-idx)])
 		print output
 		row.append(str(time.strftime("%H:%M:%S")))
@@ -87,6 +110,10 @@ for x in range(1, x):
 		row.append("retry")
 		res_fbf.writerow(row)
 		results_fbf.flush()
+		
+		index=random.choice(randomList)
+		coordIpAddr=coordipList[index]
+		coordPortNum=coordportList[index]
 
 		output = check_output(['./Client', coordIpAddr, coordPortNum, 'increment', counter_nofbf, '1', str(x-idx)])
 		print output
@@ -97,7 +124,11 @@ for x in range(1, x):
 		row1.append("retry")
 		res_nofbf.writerow(row1)
 		results_nofbf.flush()
-		
+	
+		index=random.choice(randomList)
+		coordIpAddr=coordipList[index]
+		coordPortNum=coordportList[index]
+ 
 		output = check_output(['./Client', coordIpAddr, coordPortNum, 'increment', counter_rbf, '1', str(x-idx)])
 		print output
 		row3.append(str(time.strftime("%H:%M:%S")))
@@ -107,14 +138,18 @@ for x in range(1, x):
 		row3.append("retry")
 		res_rbf.writerow(row3)
 		results_rbf.flush()
-	
-		time.sleep(random.choice(sleepTimes))
-	else:
+
+		#time.sleep(random.choice(sleepTimes))
+		
 		exp_count += 1
 		row2.append(str(time.strftime("%H:%M:%S")))
 		row2.append(str(exp_count))
 		res_exp.writerow(row2)
 		results_expected.flush()
+		
+		index=random.choice(randomList)
+		coordIpAddr=coordipList[index]
+		coordPortNum=coordportList[index]
 
 		output = check_output(['./Client', coordIpAddr, coordPortNum, 'increment', counter_fbf, '1', str(x)])
 		print output
@@ -124,6 +159,10 @@ for x in range(1, x):
 		row.append((str(val[pos+6:]).strip(':')).strip())
 		res_fbf.writerow(row)
 		results_fbf.flush()
+		
+		index=random.choice(randomList)
+		coordIpAddr=coordipList[index]
+		coordPortNum=coordportList[index]
 	
 		output = check_output(['./Client', coordIpAddr, coordPortNum, 'increment', counter_nofbf, '1', str(x)])
 		print output
@@ -134,6 +173,10 @@ for x in range(1, x):
 		res_nofbf.writerow(row1)
 		results_nofbf.flush()
 		
+		index=random.choice(randomList)
+		coordIpAddr=coordipList[index]
+		coordPortNum=coordportList[index]
+	
 		output = check_output(['./Client', coordIpAddr, coordPortNum, 'increment', counter_rbf, '1', str(x)])
 		print output
 		row3.append(str(time.strftime("%H:%M:%S")))
@@ -143,14 +186,77 @@ for x in range(1, x):
 		res_rbf.writerow(row3)
 		results_rbf.flush()
 	
-		time.sleep(random.choice(sleepTimes))
+		#time.sleep(random.choice(sleepTimes))
+
+	else:
+		exp_count += 1
+		row2.append(str(time.strftime("%H:%M:%S")))
+		row2.append(str(exp_count))
+		res_exp.writerow(row2)
+		results_expected.flush()
+		
+		index=random.choice(randomList)
+		coordIpAddr=coordipList[index]
+		coordPortNum=coordportList[index]
+
+		output = check_output(['./Client', coordIpAddr, coordPortNum, 'increment', counter_fbf, '1', str(x)])
+		print output
+		row.append(str(time.strftime("%H:%M:%S")))
+		val = check_output(['./Client', coordIpAddr, coordPortNum, 'read', counter_fbf])
+		pos = val.find("VALUE:")
+		row.append((str(val[pos+6:]).strip(':')).strip())
+		res_fbf.writerow(row)
+		results_fbf.flush()
+		
+		index=random.choice(randomList)
+		coordIpAddr=coordipList[index]
+		coordPortNum=coordportList[index]
+	
+		output = check_output(['./Client', coordIpAddr, coordPortNum, 'increment', counter_nofbf, '1', str(x)])
+		print output
+		row1.append(str(time.strftime("%H:%M:%S")))
+		val1 = check_output(['./Client', coordIpAddr, coordPortNum, 'read', counter_nofbf])
+		pos1 = val1.find("VALUE:")
+		row1.append((str(val1[pos+6:]).strip(':')).strip())
+		res_nofbf.writerow(row1)
+		results_nofbf.flush()
+		
+		index=random.choice(randomList)
+		coordIpAddr=coordipList[index]
+		coordPortNum=coordportList[index]
+	
+		output = check_output(['./Client', coordIpAddr, coordPortNum, 'increment', counter_rbf, '1', str(x)])
+		print output
+		row3.append(str(time.strftime("%H:%M:%S")))
+		val3 = check_output(['./Client', coordIpAddr, coordPortNum, 'read', counter_rbf])
+		pos3 = val3.find("VALUE:")
+		row3.append((str(val3[pos+6:]).strip(':')).strip())
+		res_rbf.writerow(row3)
+		results_rbf.flush()
+	
+		#time.sleep(random.choice(sleepTimes))
+
+index=random.choice(randomList)
+coordIpAddr=coordipList[index]
+coordPortNum=coordportList[index]
 
 output = check_output(['./Client', coordIpAddr, coordPortNum, 'read', counter_fbf])
 print output
+
+index=random.choice(randomList)
+coordIpAddr=coordipList[index]
+coordPortNum=coordportList[index]
+
 output = check_output(['./Client', coordIpAddr, coordPortNum, 'read', counter_nofbf])
 print output
+
+index=random.choice(randomList)
+coordIpAddr=coordipList[index]
+coordPortNum=coordportList[index]
+
 output = check_output(['./Client', coordIpAddr, coordPortNum, 'read', counter_rbf])
 print output
+
 print "Expected Value: " + str(exp_count)
 print "Number of increments: " + str(count)
 print "Number of retries: " + str(retries)

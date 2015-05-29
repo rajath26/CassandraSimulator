@@ -17,9 +17,9 @@ public:
 	static void socketError();
 	static void bindError();
 	static void connectError();
-	static int sendTCP(int sd, std::string buffer);
+	static int sendTCP(int *sd, std::string buffer);
 	static void sendError();
-	static std::string recvTCP(int sd);
+	static std::string recvTCP(int *sd);
 	static void recvError();
 };
 

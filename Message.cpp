@@ -118,6 +118,7 @@ std::string Message::createJoinMessage(std::string ipAddress, int portNumber) {
 
 void Message::extractOpCode(std::string recMsg) {
 	int start = 0;
+	std::cout<<"extract:"<<recMsg<<std::endl;
 	// <op_code>::<remaining_message>
 	std::vector<std::string> tokens;
 	int pos = recMsg.find(DELIMITER);
@@ -145,7 +146,7 @@ void Message::extractOpCode(std::string recMsg) {
 		setRingInMsg(recMsg.substr(pos+2));
 		return;
 	}
-	// create::counter_name::fbf/nofbf
+	// create::counter_name::fbf/nofbf/rbf
 	else if (tokens[0] == CREATEMESSAGE) {
 		this->setMessageType(CREATE);
 		start = pos + 2;
@@ -164,7 +165,7 @@ void Message::extractOpCode(std::string recMsg) {
 		}
 		return;
 	}
-	// create_replica::counter_name::fbf/nofbf
+	// create_replica::counter_name::fbf/nofbf/rbf
 	else if (tokens[0] == CREATEREPLICAMESSAGE) {
 		this->setMessageType(CREATE_REPLICA);
 		start = pos + 2;
@@ -271,7 +272,7 @@ void Message::extractOpCode(std::string recMsg) {
 		return;
 	}
 	else {
-		std::cout<<std::endl<<"Unknow opCode received by Message::extractOpCode"<<std::endl;
+		std::cout<<std::endl<<"Unknown opCode received by Message::extractOpCode"<<std::endl;
 		return;
 	}
 }

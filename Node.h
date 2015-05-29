@@ -34,6 +34,7 @@ private:
 	std::map<std::string, Counter> memTable;
 	std::map<std::string, FBF*> fbfMap;
 	std::map<std::string, RecycleBloomFilter *> rBFMap;
+	std::vector<std::thread> handlers;
 
 public:
 	Node(std::string ipAddress_, int portNumber, bool isLeader);
@@ -72,6 +73,7 @@ public:
 	bool isThisMyIpAndPortAndHashCode(std::string ipAddress_, int portNumber_, size_t hashCode_);
 	long returnSumLogicalTimeStampOfAllLocalShards(std::string coutnerName_);
 	long returnSumValueOfAllLocalShards(std::string counterName_);
+	void joinHandlersFunc();
 };
 
 #endif /* NODE_H_ */
