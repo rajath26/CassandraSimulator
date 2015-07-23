@@ -1,0 +1,27 @@
+# This is a simple ns script that demonstrates loops.
+
+set ns [new Simulator]
+
+source tb_compat.tcl
+
+set maxnodes 4
+
+set lanstr ""
+
+for {set i 1} {$i <= $maxnodes} {incr i} {
+
+    set node($i) [$ns node]
+
+    append lanstr "$node($i) "
+
+    tb-set-node-os $node($i) UBUNTU14-64-STD
+
+}
+
+# Put all the nodes in a lan
+
+set big-lan [$ns make-lan "$lanstr" 100Mb 0ms]
+
+# Go!
+
+$ns run
